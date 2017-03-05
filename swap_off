@@ -1,0 +1,79 @@
+Binary file L7-Paging.pdf matches
+Makefile:3:	gcc -Wall -g -o sim $^
+Makefile:6:	gcc -Wall -g -c $<
+Makefile:9:	rm -f *.o sim *~
+pagetable.c:6:// The top-level page table (also known as the 'page directory')
+pagetable.c:28:	int frame = -1;
+pagetable.c:35:	if(frame == -1) { // Didn't find a free page.
+pagetable.c:54: * Initializes the top-level pagetable.
+pagetable.c:57: * being simulated, so there is just one top-level page table (page directory).
+pagetable.c:65:	// Set all entries in top-level pagetable to 0, which ensures valid
+pagetable.c:72:// For simulation, we get second-level pagetables from ordinary memory
+pagetable.c:86:	// Initialize all entries in second-level pagetable
+pagetable.c:114:	memset(mem_ptr, 0, SIMPAGESIZE); // zero-fill the frame
+pagetable.c:138:	// Use top-level page directory to get pointer to 2nd-level page table
+pagetable.c:139:	(void)idx; // To keep compiler happy - remove when you have a real use.
+pagetable.c:142:	// Use vaddr to get index into 2nd-level page table and initialize 'p'
+pagetable.c:159:	return  &physmem[(p->frame >> PAGE_SHIFT)*SIMPAGESIZE];
+pagetable.c:165:	first_invalid = last_invalid = -1;
+pagetable.c:170:			if (first_invalid == -1) {
+pagetable.c:175:			if (first_invalid != -1) {
+pagetable.c:176:				printf("\t[%d] - [%d]: INVALID\n",
+pagetable.c:178:				first_invalid = last_invalid = -1;
+pagetable.c:193:	if (first_invalid != -1) {
+pagetable.c:194:		printf("\t[%d] - [%d]: INVALID\n", first_invalid, last_invalid);
+pagetable.c:195:		first_invalid = last_invalid = -1;
+pagetable.c:202:	first_invalid = last_invalid = -1;
+pagetable.c:208:			if (first_invalid == -1) {
+pagetable.c:213:			if (first_invalid != -1) {
+pagetable.c:216:				first_invalid = last_invalid = -1;
+pagetable.h:12:#define PAGE_MASK       (~(PAGE_SIZE-1))
+pagetable.h:17:#define INVALID_SWAP    -1
+pagetable.h:20:// User-level virtual addresses on 64-bit Linux system are 36 bits in our traces
+pagetable.h:22:// We split the remaining 24 bits evenly into top-level (page directory) index
+pagetable.h:23:// and second-level (page table) index, using 12 bits for each. 
+pagetable.h:29:// User-level virtual addresses on 32-bit Linux system are 32 bits, and the 
+pagetable.h:31:// We split the remaining 20 bits evenly into top-level (page directory) index
+pagetable.h:39:#define PGTBL_MASK        (PTRS_PER_PGTBL-1)
+pagetable.h:48:// Page directory entry (top-level)
+pagetable.h:53:// Page table entry (2nd-level). 
+sim.c:38: * to a (simulated) physical address -- that is, a pointer to the right
+sim.c:40: * everything to do with memory management - including translation using the
+sim.c:91:	char *usage = "USAGE: sim -f tracefile -m memorysize -s swapsize -a algorithm\n";
+sim.c:93:	while ((opt = getopt(argc, argv, "f:m:a:s:")) != -1) {
+sim.c:142:			fprintf(stderr, "Error: invalid replacement algorithm - %s\n", 
+sim.c:153:	// Cleanup - removes temporary swapfile.
+swap.c:11://---------------------------------------------------------------------
+swap.c:13:// We create a fixed-size swapfile, although it could be made larger
+swap.c:21:#define DIVROUNDUP(a,b) (((a)+(b)-1)/(b))
+swap.c:39:        b->v = malloc(words*sizeof(unsigned));
+swap.c:40:        if (b->v == NULL) {
+swap.c:45:        memset(b->v, 0, words*sizeof(unsigned));
+swap.c:46:        b->nbits = nbits;
+swap.c:50:                unsigned j, ix = words-1;
+swap.c:51:                unsigned overbits = nbits - ix*BITS_PER_WORD;
+swap.c:53:                assert(nbits / BITS_PER_WORD == words-1);
+swap.c:57:                        b->v[ix] |= ((unsigned)1 << j);
+swap.c:68:        unsigned maxix = DIVROUNDUP(b->nbits, BITS_PER_WORD);
+swap.c:72:                if (b->v[ix]!=WORD_ALLBITS) {
+swap.c:76:                                if ((b->v[ix] & mask)==0) {
+swap.c:77:                                        b->v[ix] |= mask;
+swap.c:79:                                        assert(*index < b->nbits);
+swap.c:106:        assert(index < b->nbits);
+swap.c:109:        assert((b->v[ix] & mask)==0);
+swap.c:110:        b->v[ix] |= mask;
+swap.c:119:        assert(index < b->nbits);
+swap.c:122:        assert((b->v[ix] & mask)!=0);
+swap.c:123:        b->v[ix] &= ~mask;
+swap.c:134:        return (b->v[ix] & mask);
+swap.c:140:        free(b->v);
+swap.c:144://---------------------------------------------------------------------
+swap.c:156:	if ((swapfd = mkstemp(fname)) == -1) {
+swap.c:183:// Input:  frame - the physical frame number (not byte offset) in physmem
+swap.c:184://         swap_offset - the byte position in the swap file.
+swap.c:186://	   -errno on error or number of bytes read on partial read
+swap.c:201:		assert(pos == (off_t)-1);
+swap.c:203:		return -errno;
+swap.c:217:// Input:  frame - the physical frame number (not byte offset in physmem)
+swap.c:218://         swap_offset - the byte position in the swap file.
+swap.c:244:		assert(pos == (off_t)-1);
