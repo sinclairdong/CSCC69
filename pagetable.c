@@ -47,14 +47,16 @@ int allocate_frame(pgtbl_entry_t *p) {
 			// it is dirty that is why we need to swap
             // get the pointer to swapp_off
             int offset = swap_pageout(frame, pte->swap_off);
-            if(offset == INVALID_SWAP){
-                fprintf(stderr, "invalid swap");
-                exit(1);            
-            }
             pte->swap_off = offset;
 		}else{
 		    evict_clean_count++;
 		}
+		// now we  need to update PTE 
+		pte->frame &= ~PG_VALID; //it is not valid now
+		// it is now on swap spaces
+		pte->frame |= PG_ONSWAP;
+		// it just got swaped out it didn't change yet so it is not dirty
+		pte->frame &= ~PG_DIRTY;
 	}
 
 	// Record information for virtual page that will now be stored in frame
@@ -120,16 +122,17 @@ pgdir_entry_t init_second_level() {
  *
  */
 void init_frame(int frame, addr_t vaddr) {
-	// find pointer to start of frame in (simulated) physical memory
+	// Calculate pointer to start of frame in (simulated) physical memory
 	char *mem_ptr = &physmem[frame*SIMPAGESIZE];
-	// find pointer to location in page where we keep the vaddr
+	// Calculate pointer to location in page where we keep the vaddr
         addr_t *vaddr_ptr = (addr_t *)(mem_ptr + sizeof(int));
 	
-	memset(mem_ptr, 0, SIMPAGESIZE); // set all frame zero
-	*vaddr_ptr = vaddr;             // save the vaddr for error checking
+	memset(mem_ptr, 0, SIMPAGESIZE); // zero-fill the frame
+	*vaddr_ptr = vaddr;             // record the vaddr for error checking
 
 	return;
 }
+
 
 /*
  * Locate the physical frame number for the given vaddr using the page table.
@@ -150,7 +153,7 @@ char *find_physpage(addr_t vaddr, char type) {
 
 	// IMPLEMENTATION NEEDED
 	// Use top-level page directory to get pointer to 2nd-level page table
-	if(!(pgdir[idx].pde & PG_VALID)){
+	if((pgdir[idx].pde & PG_VALID) == 0){
 	    pgdir[idx] = init_second_level();// if it is not valid initial it
 	}
 	
@@ -167,7 +170,7 @@ char *find_physpage(addr_t vaddr, char type) {
         // page need to be allocated or swap back from swap space
         // it is a miss btw
         miss_count++;
-        if(!(p->frame & PG_ONSWAP)){
+        if((p->frame & PG_ONSWAP) == 0){
             //so ...it is not on swap... where can it be?
             //IT DOESN"T EXIST LET's GIVE IT A NEW ONE. YAY~~~~
             int new_frame = allocate_frame(p);
@@ -176,7 +179,7 @@ char *find_physpage(addr_t vaddr, char type) {
             p->frame |= PG_DIRTY;
         }else{
             // frame is on the swap space we need to bring it back
-            swap_pagein(p->frame, p->swap_off);//got page information
+            swap_pagein(p->frame, p->swap_off);//find page info
             int new_frame = allocate_frame(p);
             //make sure it has the same size as phsicle
             p->frame = new_frame << PAGE_SHIFT;
@@ -199,6 +202,7 @@ char *find_physpage(addr_t vaddr, char type) {
         p->frame |= PG_DIRTY;
     }
     // it is now have to be valid and it has refference
+    p->frame |= PG_VALID;// just in case
 	p->frame |= PG_REF;
 	ref_count++;
 	// Call replacement algorithm's ref_fcn for this page

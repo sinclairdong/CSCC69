@@ -24,7 +24,8 @@ int size = 0;
 
 int vaddr_array_index = 0; 
 
-/* Page to evict is chosen using the optimal (aka MIN) algorithm. 
+/* 
+ * Page to evict is chosen using the optimal (aka MIN) algorithm. 
  * Returns the page frame number (which is also the index in the coremap)
  * for the page that is to be evicted.
  */
@@ -33,16 +34,17 @@ int opt_evict() {
 	int i, j; 
 	unsigned long MAX = 0; 
 
-	int return_frame;
+	int evict_frame;
 
 	// loop over the memory array
 	for (j = 0; j<memsize; j++){
 		// loop over the tracefile
 		for (i = vaddr_array_index; i<size; i++){
+		    //if they are the same mark it
 			if (vaddr_array[i] == memory_array[j]){
 				if (i >= MAX){
 					MAX = i; 
-					return_frame = j;
+					evict_frame = j;
 				}
 				break; 
 			}
@@ -51,7 +53,7 @@ int opt_evict() {
 			return j;
 		}
 	}	
-	return return_frame;
+	return evict_frame;
 }
 
 /* This function is called on each access to a page to update any information
