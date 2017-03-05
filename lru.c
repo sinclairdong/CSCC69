@@ -17,9 +17,38 @@ extern struct frame *coremap;
  * for the page that is to be evicted.
  */
 
+pgtbl_entry_t *lru_pte;
+unsigned long max_time;
 int lru_evict() {
+
+    // keep track of last minimum
+	pgtbl_entry_t *last_lru_pte = lru_pte; 
+	// the current pte
+	pgtbl_entry_t *current; 
 	
-	return 0;
+	
+	// for the for loop
+	int i; 
+	// the return value; index of coremap[]
+	int frame;
+	//to set it to the maximum value thus everyother value will be smaller than it ULONG_MAX is from limits.h
+	unsigned long min = ULONG_MAX;
+	
+	    current = coremap[i].pte;
+	    if(current->frame & PG_VALID){
+	        //see if it is in the memory
+	        if(current != last_lru_pte){
+	            if(current->timestamp < min){
+	                //the new mininum
+                    min = current->timestamp;
+                    lru_pte = current;
+                }
+	        }
+	    }
+	    if(current == last_lru_pte){
+	        frame = i;
+	    }
+	return frame;
 }
 
 /* This function is called on each access to a page to update any information
@@ -27,8 +56,18 @@ int lru_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void lru_ref(pgtbl_entry_t *p) {
+	if (lru_pte == NULL){
+	    //initialize if it doesn't exist
+		lru_pte = p;
+	)
+	p->timestamp = max_timestamp; //assign the timestamp to this pte
+	max_timestamp++; //increment timestamp
 
-	return;
+	if(max_timestamp == ULONG_MAX) { 
+	    // care for overflow
+		perror("may overflow with max_timestamp in lru");
+		exit(1);
+	}
 }
 
 
@@ -36,4 +75,6 @@ void lru_ref(pgtbl_entry_t *p) {
  * replacement algorithm 
  */
 void lru_init() {
+    lru_pte = NULL;
+	max_timestamp = 0;
 }
