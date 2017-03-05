@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "pagetable.h"
 
 
@@ -33,14 +34,14 @@ int lru_evict() {
 	int frame;
 	//to set it to the maximum value thus everyother value will be smaller than it ULONG_MAX is from limits.h
 	unsigned long min = ULONG_MAX;
-	
+	for(i = 0; i < memsize; i++){
 	    current = coremap[i].pte;
 	    if(current->frame & PG_VALID){
 	        //see if it is in the memory
 	        if(current != last_lru_pte){
-	            if(current->timestamp < min){
+	            if(current->time_stamp < min){
 	                //the new mininum
-                    min = current->timestamp;
+                    min = current->time_stamp;
                     lru_pte = current;
                 }
 	        }
@@ -48,6 +49,7 @@ int lru_evict() {
 	    if(current == last_lru_pte){
 	        frame = i;
 	    }
+	}
 	return frame;
 }
 
@@ -59,11 +61,11 @@ void lru_ref(pgtbl_entry_t *p) {
 	if (lru_pte == NULL){
 	    //initialize if it doesn't exist
 		lru_pte = p;
-	)
-	p->timestamp = max_timestamp; //assign the timestamp to this pte
-	max_timestamp++; //increment timestamp
+	}
+	p->time_stamp = max_time; //assign the timestamp to this pte
+	max_time++; //increment timestamp
 
-	if(max_timestamp == ULONG_MAX) { 
+	if(max_time == ULONG_MAX) { 
 	    // care for overflow
 		perror("may overflow with max_timestamp in lru");
 		exit(1);
@@ -76,5 +78,5 @@ void lru_ref(pgtbl_entry_t *p) {
  */
 void lru_init() {
     lru_pte = NULL;
-	max_timestamp = 0;
+	max_time = 0;
 }

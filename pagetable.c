@@ -120,28 +120,13 @@ pgdir_entry_t init_second_level() {
  *
  */
 void init_frame(int frame, addr_t vaddr) {
-	// Calculate pointer to start of frame in (simulated) physical memory
+	// find pointer to start of frame in (simulated) physical memory
 	char *mem_ptr = &physmem[frame*SIMPAGESIZE];
-}
-
-/* 
- * Initializes the content of a (simulated) physical memory frame when it 
- * is first allocated for some virtual address.  Just like in a real OS,
- * we fill the frame with zero's to prevent leaking information across
- * pages. 
- * 
- * In our simulation, we also store the the virtual address itself in the 
- * page frame to help with error checking.
- *
- */
-void init_frame(int frame, addr_t vaddr) {
-	// Calculate pointer to start of frame in (simulated) physical memory
-	char *mem_ptr = &physmem[frame*SIMPAGESIZE];
-	// Calculate pointer to location in page where we keep the vaddr
+	// find pointer to location in page where we keep the vaddr
         addr_t *vaddr_ptr = (addr_t *)(mem_ptr + sizeof(int));
 	
-	memset(mem_ptr, 0, SIMPAGESIZE); // zero-fill the frame
-	*vaddr_ptr = vaddr;             // record the vaddr for error checking
+	memset(mem_ptr, 0, SIMPAGESIZE); // set all frame zero
+	*vaddr_ptr = vaddr;             // save the vaddr for error checking
 
 	return;
 }
@@ -182,13 +167,13 @@ char *find_physpage(addr_t vaddr, char type) {
         // page need to be allocated or swap back from swap space
         // it is a miss btw
         miss_count++;
-        if(!(p->grame & PG_ONSWAP)){
+        if(!(p->frame & PG_ONSWAP)){
             //so ...it is not on swap... where can it be?
             //IT DOESN"T EXIST LET's GIVE IT A NEW ONE. YAY~~~~
             int new_frame = allocate_frame(p);
             init_frame(new_frame, vaddr);
             //we still kind of modify the page so set it to dirty
-            p->grame |= PG_DIRTY;
+            p->frame |= PG_DIRTY;
         }else{
             // frame is on the swap space we need to bring it back
             swap_pagein(p->frame, p->swap_off);//got page information
@@ -198,7 +183,7 @@ char *find_physpage(addr_t vaddr, char type) {
             // it is nolonger on swap
             p->frame &= ~PG_ONSWAP;
             //it is dirty as we just swap in
-            p->frame &= pg_DIRTY;
+            p->frame &= PG_DIRTY;
         }
         // now it is valide
         p->frame |= PG_VALID;
@@ -270,3 +255,18 @@ void print_pagedirectory() {
 	for (i=0; i < PTRS_PER_PGDIR; i++) {
 		if (!(pgdir[i].pde & PG_VALID)) {
 			if (first_invalid == -1) {
+				first_invalid = i;
+			}
+			last_invalid = i;
+		} else {
+			if (first_invalid != -1) {
+				printf("[%d]: INVALID\n  to\n[%d]: INVALID\n", 
+				       first_invalid, last_invalid);
+				first_invalid = last_invalid = -1;
+			}
+			pgtbl = (pgtbl_entry_t *)(pgdir[i].pde & PAGE_MASK);
+			printf("[%d]: %p\n",i, pgtbl);
+			print_pagetbl(pgtbl);
+		}
+	}
+}

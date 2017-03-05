@@ -30,12 +30,12 @@ int clock_evict() {
 	int exit = 1;
 	while(exit){
 	    current = coremap[i].pte;
-	    if((current->grame & PG_REF) == 0){
+	    if((current->frame & PG_REF) == 0){
 	        // return the index
 	        exit = 0;
 	    }else{
 	        // now set it to not used since it has been checked
-	        current->grame &= ~PG_REF;
+	        current->frame &= ~PG_REF;
 	        i++;
 	    }
 	    
