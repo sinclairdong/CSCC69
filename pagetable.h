@@ -54,6 +54,8 @@ typedef struct {
 typedef struct { 
 	unsigned int frame; // if valid bit == 1, physical frame holding vpage
 	off_t swap_off;       // offset in swap file of vpage, if any
+	unsigned long time_stamp; // used for LRU as a timestap //for lru
+
 } pgtbl_entry_t;    
 
 extern void init_pagetable();
